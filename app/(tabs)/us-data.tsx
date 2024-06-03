@@ -1,6 +1,6 @@
 // DataScreen.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,31 +8,26 @@ import {
   StyleSheet,
   FlatList,
 } from "react-native";
-import { getData, DataItem } from "@/services/usDataAPI";
+import useDataUSA from "@/hooks/useUsaData";
+import {
+  CenterHorizontalFull,
+  FlexFull,
+  VStackFull,
+} from "@/custom-components/containers";
+import { LinearGradient } from "expo-linear-gradient";
+import { col } from "@/constants/Colors";
+import MyButton from "@/custom-components/button";
 
 const DataScreen: React.FC = () => {
-  const [data, setData] = useState<DataItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [params, setParams] = useState({
+    drilldowns: "Nation",
+    measures: "Population",
+  });
+  const { data, loading, error } = useDataUSA(params);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const params = {
-          drilldowns: "Nation",
-          measures: "Population",
-        };
-        const result = await getData(params);
-        setData(result.data);
-      } catch (error) {
-        setError(error as any);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const changeParams = (newParams: Record<string, string>) => {
+    setParams(newParams as any);
+  };
 
   if (loading) {
     return (
@@ -45,20 +40,49 @@ const DataScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Data from Data USA API</Text>
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.ID}
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Text>Year: {item.Year}</Text>
-            <Text>Nation: {item.Nation}</Text>
-            <Text>Population: {item.Population}</Text>
-          </View>
-        )}
-      />
-    </View>
+    <LinearGradient
+      style={{ paddingTop: 55, flex: 1 }}
+      colors={[col[350], col[450]]}
+    >
+      <CenterHorizontalFull>
+        <VStackFull>
+          <Text style={styles.title}>Data from Data USA API</Text>
+          <FlexFull>
+            <MyButton
+              text="Population"
+              onPress={() =>
+                changeParams({ drilldowns: "Nation", measures: "Population" })
+              }
+            />
+            <MyButton
+              text="State GDP"
+              onPress={() =>
+                changeParams({ drilldowns: "State", measures: "GDP" })
+              }
+            />
+            <MyButton
+              text="County Employment"
+              onPress={() =>
+                changeParams({ drilldowns: "County", measures: "Employment" })
+              }
+            />
+          </FlexFull>
+          {data && (
+            <FlatList
+              data={data}
+              keyExtractor={(item) => item.ID}
+              renderItem={({ item }) => (
+                <View style={styles.item} key={item.ID}>
+                  <Text>Year: {item.Year}</Text>
+                  <Text>Nation: {item.Nation}</Text>
+                  <Text>Population: {item.Population.toLocaleString()}</Text>
+                </View>
+              )}
+            />
+          )}
+        </VStackFull>
+      </CenterHorizontalFull>
+    </LinearGradient>
   );
 };
 
